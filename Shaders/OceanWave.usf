@@ -1,0 +1,61 @@
+#include "/Engine/Public/Platform.ush"
+
+// Output: RGB = normal * 0.5 + 0.5, A = height (use an RGBA16f render target)
+RWTexture2D<float4> OutputTexture;
+
+float Time;
+float Amplitude;   // height of the biggest wave
+float Wavelength;  // approximate base wavelength
+float Speed;       // animation speed multiplier
+float TileSize;    // world size covered by the texture (tiles seamlessly)
+
+static const float TWO_PI = 6.28318530718;
+
+// Integer wave vectors -> the texture tiles seamlessly
+static const float2 WaveDir[4] = {
+    float2( 1.0,  0.0),
+    float2( 1.0,  1.0),
+    float2(-1.0,  2.0),
+    float2( 2.0, -1.0)
+};
+static const float WaveAmp[4] = { 1.0, 0.5, 0.25, 0.125 };
+
+[numthreads(8, 8, 1)]
+void OceanWaveCS(uint3 DTid : SV_DispatchThreadID)
+{
+    uint Width, Height;
+    OutputTexture.GetDimensions(Width, Height);
+
+    if (DTid.x >= Width || DTid.y >= Height)
+    {
+        return;
+    }
+
+    float2 UV = (float2(DTid.xy) + 0.5) / float2(Width, Height);
+    float2 P  = UV * TileSize;
+
+    float N = max(1.0, round(TileSize / max(Wavelength, 1.0)));
+
+    float H = 0.0;
+    float2 Slope = float2(0.0, 0.0);
+
+    [unroll]
+    for (int i = 0; i < 4; i++)
+    {
+        float2 K = TWO_PI * N * WaveDir[i] / TileSize;
+        float KLen = length(K);
+
+        // deep-water dispersion (g = 981 cm/s^2)
+        float Omega = Speed * sqrt(981.0 * KLen);
+
+        float Phase = dot(K, P) - Omega * Time;
+        float A = Amplitude * WaveAmp[i];
+
+        H     += A * sin(Phase);
+        Slope += K * (A * cos(Phase));
+    }
+
+    float3 Normal = normalize(float3(-Slope.x, -Slope.y, 1.0));
+
+    OutputTexture[DTid.xy] = float4(Normal * 0.5 + 0.5, H);
+}

@@ -5,11 +5,7 @@
 	"FriendlyName": "OceanEngine",
 	"Description": "Ocean simulation and rendering framework.",
 	"Category": "Water",
-	"CreatedBy": "",
-	"CreatedByURL": "",
-	"DocsURL": "",
-	"MarketplaceURL": "",
-	"SupportURL": "",
+	"CreatedBy": "Sqqed",
 	"CanContainContent": true,
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
@@ -18,7 +14,7 @@
 		{
 			"Name": "OceanEngine",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "PostConfigInit"
 		}
 	]
 }
